@@ -17,7 +17,8 @@
 - `round_points` może być `null` → „–” (`round_net` jest wtedy liczone z 0 + prowizja).
 - Duet z `complete: false`: jednej drużyny nie ma w `teams[]`. Po rozwinięciu wiersza tej drużyny nie da się
   znaleźć po slugu – pokaż samą nazwę (`team1_name`/`team2_name`) z „–” zamiast punktów.
-- Rytm wysyłki: w trakcie meczów co ~3 min, poza meczami przy zmianie danych albo co 30 min.
+- Rytm wysyłki: po każdym nowym odczycie z fantasy – w trakcie meczów co ~3 min, poza meczami co ~30 min;
+  od razu przy zmianie `match_on`, a heartbeat (`PUSH_HEARTBEAT_MINUTES`) tylko jako zabezpieczenie.
   Gdy serwer domowy straci sesję fantasy, nie wysyła **nic**. Wtedy jedynym sygnałem jest starzejące się `updated`.
 
 ## Korekta planu C: znacznik świeżości
@@ -25,19 +26,28 @@
 Progi z planu C (10 min / 2 h) dawałyby żółte „opóźnione” poza meczami, choć wszystko działa
 (dane przychodzą wtedy co ~30 min). Nowe zasady, liczone z `updated` względem teraz, odświeżane co 30 s:
 
+Próg „opóźnione” = interwał odczytu serwera + 10 min zapasu. Interwały przychodzą w opcjonalnych polach
+`interval_live_minutes` / `interval_idle_minutes` (z `CACHE_SECONDS` / `IDLE_CACHE_SECONDS` serwera, więc zmiana
+w `.env` przenosi się na stronę sama); bez nich domyślnie 3 / 30 min.
+
 | `match_on` | wiek `updated` | znacznik |
 |---|---|---|
-| `true` | ≤ 10 min | zielona kropka „na żywo” |
-| `true` | 10 min – 2 h | żółta „opóźnione (X min temu)” |
-| `false` | ≤ 40 min | neutralna/szara kropka „aktualne · brak meczów” (bez „na żywo”) |
-| `false` | 40 min – 2 h | żółta „opóźnione (X min temu)” |
-| dowolne | > 2 h | szara „ostatni stan z <data, godzina>” (spokojny ton, jak w planie C) |
-| brak pola | – | progi z planu C (10 min / 2 h) |
+| `true` lub brak pola | ≤ live + 10 (domyślnie 13 min) | zielona kropka „na żywo” |
+| `true` lub brak pola | powyżej progu | żółta „opóźnione (X min temu)” |
+| `false` | ≤ idle + 10 (domyślnie 40 min) | neutralna/szara kropka „aktualne · brak meczów” (bez „na żywo”) |
+| `false` | powyżej progu | żółta „opóźnione (X min temu)” |
+| dowolne | > max(2 h, 2 × próg) | szara „ostatni stan z <data, godzina>” (spokojny ton, jak w planie C) |
 
 Nagłówek: przy `match_on: false` zamiast „N. kolejka – na żywo” pokaż „N. kolejka”.
 
 Uwaga: `live.js` zwraca `cache-control: public, max-age=30`, więc do 30 s opóźnienia jest normalne
 i nie wymaga obsługi.
+
+## Korekta: zakładka Drużyny – dwie tabele
+
+Jak w Duetach: **Drużyny – kolejka** (`#`, Drużyna, Kolejka wyróżniona, Suma; domyślnie `round_net`↓)
+i **Drużyny – klasyfikacja** (`#`, Drużyna, Suma wyróżniona, Kolejka z dopiskiem prowizji; domyślnie `total`↓).
+Na szerokim ekranie obok siebie, na telefonie jedna pod drugą; szeroki układ na obu zakładkach.
 
 ## Korekta planu C: zakładka Duety – dwie tabele
 
@@ -68,7 +78,8 @@ Payload testowy z planu C poszerz tak, żeby pokrywał:
 ## Dodatkowe kryteria akceptacji
 
 8. `match_on: false` i `updated` sprzed 25 min → „aktualne · brak meczów”, nie żółte.
-9. `match_on: true` i `updated` sprzed 15 min → żółte „opóźnione (15 min temu)”.
-10. Payload bez pola `match_on` → zachowanie jak w planie C.
+9. `match_on: true` i `updated` sprzed 15 min (bez pól interwałów) → żółte „opóźnione (15 min temu)”.
+10. Payload bez pola `match_on` → progi jak przy `match_on: true`.
 11. `duets: []` → „Brak duetów” w obu tabelach duetów, bez błędów w konsoli.
 12. Zakładka Duety pokazuje dwie tabele; kolejność w „Duety – klasyfikacja” zgodna z `total` malejąco.
+13. Zakładka Drużyny pokazuje dwie tabele; kolejność w „Drużyny – klasyfikacja” zgodna z `total` malejąco.

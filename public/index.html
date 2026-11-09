@@ -58,8 +58,7 @@ body {
   color: var(--text);
   font: 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
-.wrap { max-width: 720px; margin: 0 auto; padding: 16px 12px 24px; }
-body.wide .wrap { max-width: 1040px; }
+.wrap { max-width: 1040px; margin: 0 auto; padding: 16px 12px 24px; }
 header h1 { font-size: 1.35rem; margin: 0 0 4px; line-height: 1.25; }
 .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; color: var(--muted); font-size: .875rem; }
 .fresh { display: inline-flex; align-items: center; gap: 6px; }
@@ -79,7 +78,7 @@ header h1 { font-size: 1.35rem; margin: 0 0 4px; line-height: 1.25; }
 .tabs button:focus-visible, th button:focus-visible, tr.duet:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .message { padding: 28px 12px; text-align: center; color: var(--muted); background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
 .grid { display: grid; gap: 16px; }
-@media (min-width: 900px) { body.wide .grid { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 900px) { .grid { grid-template-columns: 1fr 1fr; } }
 h2 { font-size: 1rem; margin: 0 0 6px; }
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
 table { width: 100%; border-collapse: collapse; table-layout: fixed; }
@@ -157,7 +156,10 @@ footer { margin-top: 24px; text-align: center; font-size: .8rem; color: var(--mu
   <main>
     <div id="message" class="message" hidden></div>
     <section id="panel-druzyny" role="tabpanel" aria-labelledby="tab-druzyny">
-      <div class="card" id="t-teams"></div>
+      <div class="grid">
+        <div><h2>Drużyny – kolejka</h2><div class="card" id="t-teams-round"></div></div>
+        <div><h2>Drużyny – klasyfikacja</h2><div class="card" id="t-teams-total"></div></div>
+      </div>
     </section>
     <section id="panel-duety" role="tabpanel" aria-labelledby="tab-duety" hidden>
       <div class="grid">
@@ -175,16 +177,23 @@ footer { margin-top: 24px; text-align: center; font-size: .8rem; color: var(--mu
 /* pure:start – czyste funkcje (testowane w Node) */
 var MIN = 60 * 1000;
 
-function freshness(updated, matchOn, now) {
+var MARGIN_MIN = 10;                     // zapas ponad interwał odczytu serwera
+var DEFAULT_LIVE_MIN = 3, DEFAULT_IDLE_MIN = 30;
+
+function interval(v, dflt) { return typeof v === "number" && isFinite(v) && v > 0 ? v : dflt; }
+
+// d – payload (opcjonalne pola interval_live_minutes / interval_idle_minutes)
+function freshness(updated, matchOn, now, d) {
   var t = new Date(updated).getTime();
   if (!isFinite(t)) return { cls: "old", text: "brak czasu aktualizacji" };
   var ageMin = Math.max(0, Math.floor((now - t) / MIN));
-  if (ageMin > 120) return { cls: "old", text: "ostatni stan z " + fmtDateTime(t) };
-  var late = { cls: "late", text: "opóźnione (" + ageMin + " min temu)" };
-  if (matchOn === false) {
-    return ageMin <= 40 ? { cls: "ok", text: "aktualne · brak meczów" } : late;
-  }
-  return ageMin <= 10 ? { cls: "live", text: "na żywo" } : late;
+  var idle = matchOn === false;
+  var limit = MARGIN_MIN + (idle
+    ? interval(d && d.interval_idle_minutes, DEFAULT_IDLE_MIN)
+    : interval(d && d.interval_live_minutes, DEFAULT_LIVE_MIN));
+  if (ageMin > Math.max(120, 2 * limit)) return { cls: "old", text: "ostatni stan z " + fmtDateTime(t) };
+  if (ageMin > limit) return { cls: "late", text: "opóźnione (" + ageMin + " min temu)" };
+  return idle ? { cls: "ok", text: "aktualne · brak meczów" } : { cls: "live", text: "na żywo" };
 }
 
 function fmtTime(t) {
@@ -392,12 +401,16 @@ function fmtPoints(v) {
   }
   var duetKey = function (d) { return "d:" + d.team1_slug + "|" + d.team2_slug; };
   var duetRows = function () { return data.duets || []; };
+  var teamKey = function (t) { return "t:" + t.slug; };
+  var teamRows = function () { return data.teams || []; };
 
   var tables = [
-    new Table({ host: "t-teams", defaultKey: "round_net", empty: "Brak drużyn",
-      rows: function () { return data.teams || []; },
-      rowKey: function (t) { return "t:" + t.slug; },
+    new Table({ host: "t-teams-round", defaultKey: "round_net", empty: "Brak drużyn",
+      rows: teamRows, rowKey: teamKey,
       cols: [rankCol, colTeam, colRound(true, teamRoundCell), colTotal(false)] }),
+    new Table({ host: "t-teams-total", defaultKey: "total", empty: "Brak drużyn",
+      rows: teamRows, rowKey: teamKey,
+      cols: [rankCol, colTeam, colTotal(true), colRound(false, teamRoundCell)] }),
     new Table({ host: "t-duets-round", defaultKey: "round_net", empty: "Brak duetów", expandable: true,
       rows: duetRows, rowKey: duetKey, detail: duetDetail,
       cols: [rankCol, colDuet, colRound(true), colTotal(false)] }),
@@ -421,7 +434,7 @@ function fmtPoints(v) {
 
   function renderFreshness() {
     if (!data) { el("fresh").hidden = true; return; }
-    var f = freshness(data.updated, data.match_on, Date.now());
+    var f = freshness(data.updated, data.match_on, Date.now(), data);
     el("fresh").className = "fresh " + f.cls;
     el("fresh-text").textContent = f.text;
     el("fresh").hidden = false;
@@ -528,7 +541,6 @@ function fmtPoints(v) {
       el("tab-" + t).tabIndex = on ? 0 : -1;
       el("panel-" + t).hidden = !on;
     });
-    document.body.classList.toggle("wide", tab === "duety");
     if (persist) {
       try { localStorage.setItem(TAB_KEY, tab); } catch (e) {}
       try {

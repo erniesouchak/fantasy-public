@@ -14,6 +14,8 @@ Każda zmiana formatu = podbicie `version` i aktualizacja wszystkich trzech czę
   "round": 14,
   "updated": "2026-11-08T17:03:12+01:00",
   "match_on": true,
+  "interval_live_minutes": 3,
+  "interval_idle_minutes": 30,
   "teams": [
     {
       "slug": "poznan-festung",
@@ -48,6 +50,8 @@ Każda zmiana formatu = podbicie `version` i aktualizacja wszystkich trzech czę
 | `round` | numer bieżącej kolejki (z nagłówka „N. kolejka – info”), `null` gdy nieznany |
 | `updated` | ISO 8601 z offsetem Europe/Warsaw (`+01:00` / `+02:00`) – kiedy serwer domowy **odczytał** dane z fantasy |
 | `match_on` | *opcjonalne* (bool) – `true`, gdy trwa okno meczowe (od 5 min przed meczem do 2,5 h po), czyli serwer czyta fantasy co ~3 min; `false` poza meczami (odczyt co ~30 min). Brak pola = nieznane |
+| `interval_live_minutes` | *opcjonalne* (liczba > 0) – co ile minut serwer czyta fantasy w trakcie meczów (`CACHE_SECONDS / 60`), czyli jak często zmienia się `updated` przy `match_on: true` |
+| `interval_idle_minutes` | *opcjonalne* (liczba > 0) – to samo poza meczami (`IDLE_CACHE_SECONDS / 60`) |
 | `received_at` | dopisuje Cloudflare przy zapisie – serwer domowy go **nie** wysyła |
 | `teams[]` | posortowane: `round_net` malejąco, przy remisie `total` malejąco |
 | `teams[].round_points` | „Punkty w kolejce” ze strony drużyny (`null` gdy nie udało się odczytać) |
@@ -68,12 +72,21 @@ jest obecne. Dodanie pola opcjonalnego nie wymaga podbicia `version`; zmiana zna
 
 ## Kiedy serwer domowy wysyła dane
 
-- W trakcie meczów (`match_on: true`): po każdym nowym odczycie, czyli co ~3 min.
-- Poza meczami: gdy zmieniły się `round`, `match_on`, `teams` lub `duets`, a bez zmian co 30 min (heartbeat,
-  `PUSH_HEARTBEAT_MINUTES`). `updated` jest więc zwykle młodsze niż ~35 min.
+- Po **każdym nowym odczycie** z fantasy (nowe `updated`): w trakcie meczów co `interval_live_minutes` (~3 min),
+  poza meczami co `interval_idle_minutes` (~30 min) – niezależnie od tego, czy punkty się zmieniły.
+- Od razu, gdy zmieni się `round`, `match_on`, `teams` lub `duets` (hash z tych pól), np. `match_on` po końcu okna meczowego.
+- Heartbeat `PUSH_HEARTBEAT_MINUTES` (domyślnie 30) to tylko zabezpieczenie: ponownie wysyła ostatni stan,
+  ale **nie** odświeża `updated`, więc nie wpływa na znacznik świeżości.
 - Gdy fantasy wymaga zalogowania (brak sesji) albo odczyt się nie udał – **nic** nie jest wysyłane.
   Na stronie publicznej zostaje ostatni stan, a `updated` się starzeje; to jedyny sygnał awarii.
 - Limit darmowy KV (1000 zapisów/dobę): realnie ~200 zapisów w dzień meczowy, ~50 w dzień bez meczów.
+
+## Znacznik świeżości na stronie publicznej
+
+Próg „opóźnione” = interwał + 10 min zapasu: `interval_live_minutes` przy `match_on: true` lub braku pola,
+`interval_idle_minutes` przy `match_on: false`. Brak pól interwałów (albo złe wartości) → 3 / 30 min,
+czyli progi 13 / 40 min. „Ostatni stan z …” po przekroczeniu max(2 h, 2 × próg).
+Zmiana `CACHE_SECONDS` / `IDLE_CACHE_SECONDS` w `.env` serwera przenosi się więc na stronę bez zmian w kodzie strony.
 
 ## Czego w payloadzie być NIE może
 

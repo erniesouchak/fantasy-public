@@ -13,9 +13,22 @@ assert.equal(freshness(ago(5), undefined, now).cls, "live");
 assert.equal(freshness(ago(15), undefined, now).text, "opóźnione (15 min temu)");
 assert.equal(freshness(ago(180), undefined, now).cls, "old");
 assert.match(freshness(ago(180), undefined, now).text, /^ostatni stan z /);
-// match_on: true
-assert.equal(freshness(ago(10), true, now).cls, "live");
+// match_on: true (domyślny interwał 3 min → próg 13 min)
+assert.equal(freshness(ago(13), true, now).cls, "live");
+assert.equal(freshness(ago(14), true, now).cls, "late");
 assert.deepEqual(freshness(ago(15), true, now), { cls: "late", text: "opóźnione (15 min temu)" });
+// interwały z payloadu: próg = interwał + 10 min
+assert.equal(freshness(ago(15), true, now, { interval_live_minutes: 5 }).cls, "live");
+assert.equal(freshness(ago(16), true, now, { interval_live_minutes: 5 }).cls, "late");
+assert.equal(freshness(ago(70), false, now, { interval_idle_minutes: 60 }).cls, "ok");
+assert.equal(freshness(ago(71), false, now, { interval_idle_minutes: 60 }).cls, "late");
+// "ostatni stan" po max(2 h, 2 × próg)
+assert.equal(freshness(ago(130), false, now, { interval_idle_minutes: 120 }).cls, "ok");
+assert.equal(freshness(ago(131), false, now, { interval_idle_minutes: 120 }).cls, "late");
+assert.equal(freshness(ago(261), false, now, { interval_idle_minutes: 120 }).cls, "old");
+// złe wartości → domyślne
+assert.equal(freshness(ago(41), false, now, { interval_idle_minutes: "x" }).cls, "late");
+assert.equal(freshness(ago(13), true, now, { interval_live_minutes: 0 }).cls, "live");
 // match_on: false
 assert.deepEqual(freshness(ago(25), false, now), { cls: "ok", text: "aktualne · brak meczów" });
 assert.equal(freshness(ago(40), false, now).cls, "ok");

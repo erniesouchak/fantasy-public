@@ -41,6 +41,8 @@ curl -sS -X POST http://localhost:8788/api/push \
   "round": 14,
   "updated": "$UPDATED",
   "match_on": $MATCH_ON,
+  "interval_live_minutes": 3,
+  "interval_idle_minutes": 30,
   "teams": [
     { "slug": "poznan-festung", "name": "Poznań Festung", "round_points": 57, "penalty": 0, "round_net": 57, "total": 762 },
     { "slug": "lelek-kozodoj", "name": "Lelek Kozodój", "round_points": 59, "penalty": -4, "round_net": 55, "total": 820 },
@@ -63,7 +65,7 @@ curl -sS -X POST http://localhost:8788/api/push \
 EOF
 ```
 
-Wariant bez `match_on` (zachowanie wg progów 10 min / 2 h) i z pustą listą duetów:
+Wariant bez `match_on` i bez pól interwałów (progi domyślne 13 min / 2 h) i z pustą listą duetów:
 
 ```bash
 curl -sS -X POST http://localhost:8788/api/push \

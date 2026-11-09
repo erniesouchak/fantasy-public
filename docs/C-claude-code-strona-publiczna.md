@@ -53,7 +53,8 @@ Bez zewnętrznych CDN i fontów (strona ma działać i być szybka bez nich).
 
 ### Świeżość danych (kluczowe)
 Nagłówek: „**N. kolejka – na żywo**” + „aktualizacja: HH:MM” (z `updated`, czas lokalny).
-Obok znacznik świeżości liczony z `updated` względem teraz, odświeżany co 30 s:
+Obok znacznik świeżości liczony z `updated` względem teraz, odświeżany co 30 s
+(progi zaktualizowane – patrz `01-ustalenia-z-serwera-domowego.md` i kontrakt `00`):
 - ≤ 10 min → zielona kropka „na żywo”,
 - 10 min – 2 h → żółta „opóźnione (X min temu)”,
 - > 2 h → szara „ostatni stan z <data, godzina>” (poza meczami to normalne – bez alarmującego tonu).
@@ -62,7 +63,8 @@ Obok znacznik świeżości liczony z `updated` względem teraz, odświeżany co 
 Zakładki **Drużyny | Duety** (zapamiętane w `localStorage`, w `try/catch`; parametr `?tab=duety` ma pierwszeństwo,
 żeby dało się wysłać link wprost do duetów).
 
-**Drużyny:** `#`, Drużyna, Kolejka (`round_net`, wyróżnione), Suma (`total`).
+**Drużyny:** dwie tabele – „kolejka” (`#`, Drużyna, Kolejka (`round_net`, wyróżnione), Suma (`total`))
+i „klasyfikacja” (Suma wyróżniona, domyślnie `total`↓) – patrz `01-ustalenia-z-serwera-domowego.md`.
 - Prowizja (`penalty < 0`) jako mały czerwony dopisek przy punktach kolejki, np. `43 −6`.
 - `round_points: null` → „–”.
 - Sortowanie po kliknięciu nagłówka kolumny (Kolejka / Suma), domyślnie Kolejka malejąco.
