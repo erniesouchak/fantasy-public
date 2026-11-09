@@ -1,0 +1,570 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Fantasy Live – FMForumDiscord III</title>
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --text: #1a1d23;
+  --muted: #646b78;
+  --border: #e2e5ea;
+  --accent: #1f6feb;
+  --row-hover: #f0f3f7;
+  --skeleton: #e8ebef;
+  --green: #1a9b4b;
+  --yellow: #c58a00;
+  --grey: #8a919c;
+  --red: #c9372c;
+  --gold: #b8860b;
+  --silver: #6e7784;
+  --bronze: #a0522d;
+  --flash: rgba(255, 196, 0, .35);
+  --tag-bg: #fff3d6;
+  --tag-text: #8a5a00;
+  --notice-bg: #fff6e0;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111317;
+    --surface: #1a1d23;
+    --text: #e6e8eb;
+    --muted: #9aa1ad;
+    --border: #2c3038;
+    --accent: #5c9dff;
+    --row-hover: #22262d;
+    --skeleton: #262a31;
+    --green: #3ccf72;
+    --yellow: #e6b325;
+    --grey: #7d8490;
+    --red: #ff6b5e;
+    --gold: #e3b341;
+    --silver: #b4bcc8;
+    --bronze: #d08c5f;
+    --flash: rgba(230, 179, 37, .3);
+    --tag-bg: #3a2f14;
+    --tag-text: #f0c869;
+    --notice-bg: #2e2816;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+.wrap { max-width: 720px; margin: 0 auto; padding: 16px 12px 24px; }
+body.wide .wrap { max-width: 1040px; }
+header h1 { font-size: 1.35rem; margin: 0 0 4px; line-height: 1.25; }
+.meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; color: var(--muted); font-size: .875rem; }
+.fresh { display: inline-flex; align-items: center; gap: 6px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--grey); flex: none; }
+.fresh.live .dot { background: var(--green); box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 25%, transparent); }
+.fresh.live { color: var(--green); }
+.fresh.late .dot { background: var(--yellow); }
+.fresh.late { color: var(--yellow); }
+.notice { margin: 10px 0 0; padding: 6px 10px; border-radius: 6px; background: var(--notice-bg); color: var(--muted); font-size: .85rem; }
+.tabs { display: flex; gap: 4px; margin: 16px 0 12px; border-bottom: 1px solid var(--border); }
+.tabs button {
+  appearance: none; border: 0; background: none; color: var(--muted);
+  font: inherit; font-weight: 600; padding: 8px 14px; cursor: pointer;
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.tabs button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); }
+.tabs button:focus-visible, th button:focus-visible, tr.duet:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.message { padding: 28px 12px; text-align: center; color: var(--muted); background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+.grid { display: grid; gap: 16px; }
+@media (min-width: 900px) { body.wide .grid { grid-template-columns: 1fr 1fr; } }
+h2 { font-size: 1rem; margin: 0 0 6px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+th, td { padding: 8px 6px; text-align: left; vertical-align: top; }
+th { font-size: .75rem; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--border); }
+td { border-bottom: 1px solid var(--border); }
+tbody tr:last-child td { border-bottom: 0; }
+.c-rank { width: 2.4em; text-align: right; color: var(--muted); padding-right: 8px; }
+.c-num { width: 5.2em; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.c-num.main { font-weight: 700; }
+.c-name { overflow-wrap: anywhere; }
+td.c-rank { font-variant-numeric: tabular-nums; font-weight: 600; }
+tr.p1 td.c-rank { color: var(--gold); }
+tr.p2 td.c-rank { color: var(--silver); }
+tr.p3 td.c-rank { color: var(--bronze); }
+th button {
+  appearance: none; border: 0; background: none; padding: 0; margin: 0;
+  font: inherit; color: inherit; text-transform: inherit; letter-spacing: inherit; cursor: pointer;
+}
+th[aria-sort] button { color: var(--text); }
+th[aria-sort="descending"] button::after { content: " ↓"; }
+th[aria-sort="ascending"] button::after { content: " ↑"; }
+a.team { color: inherit; text-decoration: none; }
+a.team:hover { text-decoration: underline; color: var(--accent); }
+.sub { display: block; font-size: .8rem; color: var(--muted); }
+.pen { font-size: .75rem; font-weight: 500; color: var(--red); margin-left: 3px; }
+.tag { display: inline-block; font-size: .7rem; padding: 1px 6px; border-radius: 4px; background: var(--tag-bg); color: var(--tag-text); margin-left: 6px; vertical-align: 1px; white-space: nowrap; }
+tr.duet { cursor: pointer; }
+tr.duet:hover td { background: var(--row-hover); }
+tr.duet .chev { display: inline-block; width: 1em; color: var(--muted); transition: transform .15s; }
+tr.duet[aria-expanded="true"] .chev { transform: rotate(90deg); }
+tr.detail td { background: var(--row-hover); padding: 6px 10px 10px 2.9em; }
+.dt { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; font-size: .85rem; }
+.dt + .dt { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); }
+.dt .n { font-weight: 600; overflow-wrap: anywhere; grid-column: 1 / -1; }
+.dt .k { color: var(--muted); }
+.dt .v { text-align: right; font-variant-numeric: tabular-nums; }
+.dt .v.neg { color: var(--red); }
+.flash { animation: flash 2s ease-out; }
+@keyframes flash { from { background: var(--flash); } to { background: transparent; } }
+@media (prefers-reduced-motion: reduce) {
+  .flash { animation: none; }
+  tr.duet .chev { transition: none; }
+}
+.sk { display: block; height: .9em; border-radius: 4px; background: var(--skeleton); }
+.sk.s { width: 1.2em; margin-left: auto; }
+.sk.m { width: 60%; }
+.sk.n { width: 2.4em; margin-left: auto; }
+footer { margin-top: 24px; text-align: center; font-size: .8rem; color: var(--muted); }
+@media (max-width: 400px) {
+  .wrap { padding: 12px 8px 20px; }
+  th, td { padding: 7px 4px; }
+  .c-num { width: 4.4em; }
+  .c-rank { width: 2em; padding-right: 6px; }
+  tr.detail td { padding-left: 1.5em; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1 id="title">Fantasy Live</h1>
+    <div class="meta">
+      <span id="updated"></span>
+      <span id="fresh" class="fresh" hidden><span class="dot" aria-hidden="true"></span><span id="fresh-text"></span></span>
+    </div>
+    <p id="notice" class="notice" role="status" hidden></p>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Widok">
+    <button type="button" role="tab" id="tab-druzyny" aria-controls="panel-druzyny" data-tab="druzyny">Drużyny</button>
+    <button type="button" role="tab" id="tab-duety" aria-controls="panel-duety" data-tab="duety">Duety</button>
+  </nav>
+
+  <main>
+    <div id="message" class="message" hidden></div>
+    <section id="panel-druzyny" role="tabpanel" aria-labelledby="tab-druzyny">
+      <div class="card" id="t-teams"></div>
+    </section>
+    <section id="panel-duety" role="tabpanel" aria-labelledby="tab-duety" hidden>
+      <div class="grid">
+        <div><h2>Duety – kolejka</h2><div class="card" id="t-duets-round"></div></div>
+        <div><h2>Duety – klasyfikacja</h2><div class="card" id="t-duets-total"></div></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>Dane: Fantasy Ekstraklasa · nieoficjalne zestawienie</footer>
+</div>
+
+<script>
+"use strict";
+/* pure:start – czyste funkcje (testowane w Node) */
+var MIN = 60 * 1000;
+
+function freshness(updated, matchOn, now) {
+  var t = new Date(updated).getTime();
+  if (!isFinite(t)) return { cls: "old", text: "brak czasu aktualizacji" };
+  var ageMin = Math.max(0, Math.floor((now - t) / MIN));
+  if (ageMin > 120) return { cls: "old", text: "ostatni stan z " + fmtDateTime(t) };
+  var late = { cls: "late", text: "opóźnione (" + ageMin + " min temu)" };
+  if (matchOn === false) {
+    return ageMin <= 40 ? { cls: "ok", text: "aktualne · brak meczów" } : late;
+  }
+  return ageMin <= 10 ? { cls: "live", text: "na żywo" } : late;
+}
+
+function fmtTime(t) {
+  return new Date(t).toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" });
+}
+function fmtDateTime(t) {
+  return new Date(t).toLocaleString("pl-PL", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
+}
+
+function num(v) { return typeof v === "number" && isFinite(v) ? v : -Infinity; }
+
+// Sortuje kopię listy wg klucza głównego i pomocniczego, nadaje miejsca ex aequo (1, 2, 2, 4).
+function rankRows(rows, key, key2, dir) {
+  var sign = dir === "asc" ? 1 : -1;
+  var sorted = rows.map(function (r, i) { return { r: r, i: i }; });
+  sorted.sort(function (a, b) {
+    var d = num(a.r[key]) - num(b.r[key]);
+    if (d === 0 || isNaN(d)) d = num(a.r[key2]) - num(b.r[key2]);
+    if (d === 0 || isNaN(d)) return a.i - b.i;
+    return sign * d;
+  });
+  var out = [];
+  for (var i = 0; i < sorted.length; i++) {
+    var rank = i + 1;
+    if (i > 0 && num(sorted[i].r[key]) === num(sorted[i - 1].r[key])) rank = out[i - 1].rank;
+    out.push({ row: sorted[i].r, rank: rank });
+  }
+  return out;
+}
+
+function fmtPoints(v) {
+  return typeof v === "number" && isFinite(v) ? String(v).replace("-", "\u2212") : "\u2013";
+}
+/* pure:end */
+
+(function () {
+  var TEAM_URL = "https://fantasy.ekstraklasa.org/user-team/view/";
+  var POLL_MS = 60 * 1000;
+  var TAB_KEY = "fantasy-live-tab";
+
+  var el = function (id) { return document.getElementById(id); };
+  var data = null;          // ostatnie poprawne dane
+  var prevVals = null;      // wartości z poprzedniego odświeżenia (do podświetlenia zmian)
+  var changed = {};         // klucz wiersza -> {round_net:true, total:true}
+  var pollTimer = null;
+  var loading = false;
+
+  function h(tag, attrs, children) {
+    var n = document.createElement(tag);
+    if (attrs) for (var k in attrs) {
+      if (attrs[k] == null || attrs[k] === false) continue;
+      if (k === "class") n.className = attrs[k];
+      else if (k === "text") n.textContent = attrs[k];
+      else n.setAttribute(k, attrs[k]);
+    }
+    (children || []).forEach(function (c) {
+      if (c == null) return;
+      n.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
+    });
+    return n;
+  }
+
+  function teamLink(slug, name) {
+    var label = name || slug || "?";
+    if (!slug) return h("span", { text: label });
+    return h("a", {
+      class: "team", href: TEAM_URL + encodeURIComponent(slug),
+      target: "_blank", rel: "noopener noreferrer", text: label
+    });
+  }
+
+  /* ---------- tabele ---------- */
+
+  function Table(cfg) {
+    this.cfg = cfg;
+    this.sort = { key: cfg.defaultKey, dir: "desc" };
+    this.expanded = {};
+  }
+
+  Table.prototype.setSort = function (key) {
+    if (this.sort.key === key) this.sort.dir = this.sort.dir === "desc" ? "asc" : "desc";
+    else this.sort = { key: key, dir: "desc" };
+    this.render();
+  };
+
+  Table.prototype.render = function () {
+    var cfg = this.cfg, self = this;
+    var host = el(cfg.host);
+    host.textContent = "";
+    if (!data) { host.appendChild(skeleton(cfg)); return; }
+    var rows = cfg.rows();
+    if (!rows.length) {
+      host.appendChild(h("div", { class: "message", style: "border:0", text: cfg.empty }));
+      return;
+    }
+    var key2 = cfg.cols.filter(function (c) { return c.sortable && c.key !== self.sort.key; })[0].key;
+    var ranked = rankRows(rows, this.sort.key, key2, this.sort.dir);
+
+    var headRow = h("tr", null, cfg.cols.map(function (c) {
+      var attrs = { class: c.cls, scope: "col" };
+      if (!c.sortable) return h("th", attrs, [c.label ? c.label : h("span", { "aria-label": "Miejsce", text: "#" })]);
+      if (self.sort.key === c.key) attrs["aria-sort"] = self.sort.dir === "desc" ? "descending" : "ascending";
+      var b = h("button", { type: "button", text: c.label });
+      b.addEventListener("click", function () { self.setSort(c.key); });
+      return h("th", attrs, [b]);
+    }));
+
+    var body = h("tbody");
+    ranked.forEach(function (it) {
+      var r = it.row, rk = cfg.rowKey(r);
+      var ch = changed[rk] || {};
+      var tr = h("tr", { class: it.rank <= 3 ? "p" + it.rank : null });
+      cfg.cols.forEach(function (c) {
+        var cls = c.cls + (c.key && ch[c.key] ? " flash" : "");
+        tr.appendChild(h("td", { class: cls }, c.cell(r, it)));
+      });
+      body.appendChild(tr);
+      if (cfg.expandable) {
+        var open = !!self.expanded[rk];
+        tr.className += " duet";
+        tr.setAttribute("tabindex", "0");
+        tr.setAttribute("aria-expanded", String(open));
+        var toggle = function (ev) {
+          if (ev.target.closest && ev.target.closest("a")) return;
+          self.expanded[rk] = !self.expanded[rk];
+          self.render();
+          var again = el(cfg.host).querySelector('tr[data-k="' + cssEsc(rk) + '"]');
+          if (again && ev.type === "keydown") again.focus();
+        };
+        tr.setAttribute("data-k", rk);
+        tr.addEventListener("click", toggle);
+        tr.addEventListener("keydown", function (ev) {
+          if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); toggle(ev); }
+        });
+        if (open) body.appendChild(h("tr", { class: "detail" }, [h("td", { colspan: String(cfg.cols.length) }, cfg.detail(r))]));
+      }
+    });
+
+    host.appendChild(h("table", null, [h("thead", null, [headRow]), body]));
+  };
+
+  function cssEsc(s) { return window.CSS && CSS.escape ? CSS.escape(s) : String(s).replace(/["\\]/g, "\\$&"); }
+
+  function skeleton(cfg) {
+    var body = h("tbody");
+    for (var i = 0; i < 8; i++) {
+      body.appendChild(h("tr", null, cfg.cols.map(function (c) {
+        var s = c.cls.indexOf("c-rank") >= 0 ? "s" : c.cls.indexOf("c-num") >= 0 ? "n" : "m";
+        return h("td", { class: c.cls }, [h("span", { class: "sk " + s })]);
+      })));
+    }
+    var head = h("tr", null, cfg.cols.map(function (c) { return h("th", { class: c.cls, text: c.label || "#" }); }));
+    return h("table", { "aria-busy": "true" }, [h("thead", null, [head]), body]);
+  }
+
+  var rankCol = { label: "", cls: "c-rank", cell: function (r, it) { return [String(it.rank)]; } };
+
+  function teamRoundCell(t) {
+    var out = [t.round_points == null ? "\u2013" : fmtPoints(t.round_net)];
+    if (typeof t.penalty === "number" && t.penalty < 0) {
+      out.push(h("span", { class: "pen", title: "prowizja za transfery", text: fmtPoints(t.penalty) }));
+    }
+    return out;
+  }
+
+  function duetNameCell(d) {
+    var name = h("span", null, [
+      h("span", { class: "chev", "aria-hidden": "true", text: "\u203A" }),
+      d.group_name || "\u2013"
+    ]);
+    if (d.complete === false) name.appendChild(h("span", { class: "tag", text: "niepełne dane" }));
+    return [name, h("span", { class: "sub", text: d.managers || "" })];
+  }
+
+  function duetDetail(d) {
+    var byslug = {};
+    (data.teams || []).forEach(function (t) { byslug[t.slug] = t; });
+    return [1, 2].map(function (n) {
+      var slug = d["team" + n + "_slug"], t = byslug[slug];
+      var name = (t && t.name) || d["team" + n + "_name"];
+      var pen = t && typeof t.penalty === "number" ? t.penalty : null;
+      return h("div", { class: "dt" }, [
+        h("span", { class: "n" }, [teamLink(slug, name)]),
+        h("span", { class: "k", text: "Punkty w kolejce" }),
+        h("span", { class: "v", text: t ? fmtPoints(t.round_points) : "\u2013" }),
+        h("span", { class: "k", text: "Prowizja" }),
+        h("span", { class: "v" + (pen < 0 ? " neg" : ""), text: t ? fmtPoints(pen) : "\u2013" }),
+        h("span", { class: "k", text: "Kolejka (netto)" }),
+        h("span", { class: "v", text: t ? fmtPoints(t.round_net) : "\u2013" }),
+        h("span", { class: "k", text: "Suma" }),
+        h("span", { class: "v", text: t ? fmtPoints(t.total) : "\u2013" })
+      ]);
+    });
+  }
+
+  var colTeam = { label: "Drużyna", cls: "c-name", cell: function (t) { return [teamLink(t.slug, t.name)]; } };
+  var colDuet = { label: "Nazwa", cls: "c-name", cell: duetNameCell };
+  function colRound(main, cellFn) {
+    return { label: "Kolejka", key: "round_net", sortable: true, cls: "c-num" + (main ? " main" : ""),
+      cell: cellFn || function (r) { return [fmtPoints(r.round_net)]; } };
+  }
+  function colTotal(main) {
+    return { label: "Suma", key: "total", sortable: true, cls: "c-num" + (main ? " main" : ""),
+      cell: function (r) { return [fmtPoints(r.total)]; } };
+  }
+  var duetKey = function (d) { return "d:" + d.team1_slug + "|" + d.team2_slug; };
+  var duetRows = function () { return data.duets || []; };
+
+  var tables = [
+    new Table({ host: "t-teams", defaultKey: "round_net", empty: "Brak drużyn",
+      rows: function () { return data.teams || []; },
+      rowKey: function (t) { return "t:" + t.slug; },
+      cols: [rankCol, colTeam, colRound(true, teamRoundCell), colTotal(false)] }),
+    new Table({ host: "t-duets-round", defaultKey: "round_net", empty: "Brak duetów", expandable: true,
+      rows: duetRows, rowKey: duetKey, detail: duetDetail,
+      cols: [rankCol, colDuet, colRound(true), colTotal(false)] }),
+    new Table({ host: "t-duets-total", defaultKey: "total", empty: "Brak duetów", expandable: true,
+      rows: duetRows, rowKey: duetKey, detail: duetDetail,
+      cols: [rankCol, colDuet, colTotal(true), colRound(false)] })
+  ];
+
+  /* ---------- nagłówek / świeżość ---------- */
+
+  function renderHeader() {
+    if (!data) return;
+    var round = typeof data.round === "number" ? data.round + ". kolejka" : "Kolejka";
+    el("title").textContent = data.match_on === false ? round : round + " – na żywo";
+    var leagueName = data.league && data.league.name;
+    document.title = "Fantasy Live" + (leagueName ? " – " + leagueName : "");
+    var t = new Date(data.updated).getTime();
+    el("updated").textContent = isFinite(t) ? "aktualizacja: " + fmtTime(t) : "";
+    renderFreshness();
+  }
+
+  function renderFreshness() {
+    if (!data) { el("fresh").hidden = true; return; }
+    var f = freshness(data.updated, data.match_on, Date.now());
+    el("fresh").className = "fresh " + f.cls;
+    el("fresh-text").textContent = f.text;
+    el("fresh").hidden = false;
+  }
+
+  /* ---------- stany ---------- */
+
+  function showMessage(text) {
+    var m = el("message");
+    if (text) { m.textContent = text; m.hidden = false; } else m.hidden = true;
+    el("panel-druzyny").style.display = text ? "none" : "";
+    el("panel-duety").style.display = text ? "none" : "";
+  }
+  function showNotice(text) {
+    var n = el("notice");
+    n.textContent = text || "";
+    n.hidden = !text;
+  }
+
+  function renderAll() { tables.forEach(function (t) { t.render(); }); }
+
+  function snapshot(d) {
+    var m = {};
+    (d.teams || []).forEach(function (t) { m["t:" + t.slug] = { round_net: t.round_net, total: t.total }; });
+    (d.duets || []).forEach(function (x) { m[duetKey(x)] = { round_net: x.round_net, total: x.total }; });
+    return m;
+  }
+
+  function accept(d) {
+    var snap = snapshot(d);
+    changed = {};
+    if (prevVals) {
+      for (var k in snap) {
+        var p = prevVals[k];
+        if (!p) continue;
+        var c = {};
+        if (p.round_net !== snap[k].round_net) c.round_net = true;
+        if (p.total !== snap[k].total) c.total = true;
+        if (c.round_net || c.total) changed[k] = c;
+      }
+    }
+    prevVals = snap;
+    data = d;
+    showMessage(null);
+    showNotice(null);
+    renderHeader();
+    renderAll();
+    changed = {};
+  }
+
+  function load() {
+    if (loading) return;
+    loading = true;
+    fetch("/api/live", { cache: "no-store" })
+      .then(function (res) {
+        if (res.status === 404) return { kind: "nodata" };
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return res.json().then(function (j) { return { kind: "ok", body: j }; });
+      })
+      .then(function (r) {
+        if (r.kind === "nodata") {
+          data = null; prevVals = null;
+          el("fresh").hidden = true; el("updated").textContent = "";
+          el("title").textContent = "Fantasy Live";
+          showNotice(null);
+          showMessage("Brak danych – serwer jeszcze nic nie wysłał");
+          return;
+        }
+        var b = r.body;
+        if (!b || b.version !== 1 || !Array.isArray(b.teams) || !Array.isArray(b.duets)) {
+          data = null; prevVals = null;
+          el("fresh").hidden = true; el("updated").textContent = "";
+          showNotice(null);
+          showMessage("Nieobsługiwany format danych");
+          return;
+        }
+        accept(b);
+      })
+      .catch(function () {
+        if (data) showNotice("Nie udało się odświeżyć danych – pokazuję ostatni stan.");
+        else showMessage("Nie udało się pobrać danych. Spróbujemy ponownie za chwilę.");
+      })
+      .then(function () { loading = false; });
+  }
+
+  /* ---------- odpytywanie ---------- */
+
+  function schedule() {
+    clearInterval(pollTimer);
+    pollTimer = setInterval(load, POLL_MS);
+  }
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "hidden") { clearInterval(pollTimer); pollTimer = null; }
+    else { load(); schedule(); renderFreshness(); }
+  });
+  setInterval(renderFreshness, 30 * 1000);
+
+  /* ---------- zakładki ---------- */
+
+  function setTab(tab, persist) {
+    ["druzyny", "duety"].forEach(function (t) {
+      var on = t === tab;
+      el("tab-" + t).setAttribute("aria-selected", String(on));
+      el("tab-" + t).tabIndex = on ? 0 : -1;
+      el("panel-" + t).hidden = !on;
+    });
+    document.body.classList.toggle("wide", tab === "duety");
+    if (persist) {
+      try { localStorage.setItem(TAB_KEY, tab); } catch (e) {}
+      try {
+        var u = new URL(location.href);
+        if (tab === "duety") u.searchParams.set("tab", "duety"); else u.searchParams.delete("tab");
+        history.replaceState(null, "", u.pathname + u.search + u.hash);
+      } catch (e) {}
+    }
+  }
+  function initialTab() {
+    try {
+      var q = new URLSearchParams(location.search).get("tab");
+      if (q === "duety" || q === "druzyny") return q;
+    } catch (e) {}
+    try {
+      var s = localStorage.getItem(TAB_KEY);
+      if (s === "duety" || s === "druzyny") return s;
+    } catch (e) {}
+    return "druzyny";
+  }
+  Array.prototype.forEach.call(document.querySelectorAll(".tabs button"), function (b) {
+    b.addEventListener("click", function () { setTab(b.getAttribute("data-tab"), true); });
+    b.addEventListener("keydown", function (ev) {
+      if (ev.key === "ArrowRight" || ev.key === "ArrowLeft") {
+        var next = b.getAttribute("data-tab") === "druzyny" ? "duety" : "druzyny";
+        setTab(next, true);
+        el("tab-" + next).focus();
+      }
+    });
+  });
+
+  setTab(initialTab(), false);
+  renderAll();   // szkielet
+  load();
+  if (document.visibilityState !== "hidden") schedule();
+})();
+</script>
+</body>
+</html>
