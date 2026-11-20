@@ -63,8 +63,12 @@ Obie tabele: ex aequo (1, 2, 2, 4), rozwijanie wiersza z obiema drużynami, etyk
 „Brak duetów” przy pustej liście. Sortowanie po kliknięciu nagłówka działa w każdej tabeli niezależnie,
 a rozwinięcie wiersza w jednej nie rozwija go w drugiej.
 
-Punktów „live” (z trwających meczów) tu nie ma – kontrakt ich nie zawiera; mają je tylko w lokalnym panelu
-serwera domowego. Kontrakt `00` bez zmian.
+## Korekta: Suma z live (`total_live`)
+
+Kontrakt `00` ma opcjonalne `teams[].total_live` i `duets[].total_live` (`total` + punkty bieżącej kolejki,
+których fantasy jeszcze nie wliczyło – ta sama liczba co „suma live” w lokalnym panelu serwera domowego).
+Wszędzie, gdzie strona pokazuje lub sortuje po „Suma” (`total` w opisach wyżej), bierze `total_live`,
+a gdy pola brak – `total` (`withLiveTotals()` w `index.html`, przed renderem). `version` bez zmian.
 
 ## Dodatkowe dane do testowego `curl` w README
 

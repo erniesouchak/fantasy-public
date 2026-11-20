@@ -224,6 +224,21 @@ function rankRows(rows, key, key2, dir) {
   return out;
 }
 
+// "Suma" na stronie = total_live (total + punkty bieżącej kolejki, opcjonalne), brak pola → total.
+function withLiveTotals(d) {
+  function fix(r) {
+    var o = {};
+    for (var k in r) o[k] = r[k];
+    if (typeof r.total_live === "number" && isFinite(r.total_live)) o.total = r.total_live;
+    return o;
+  }
+  var out = {};
+  for (var k in d) out[k] = d[k];
+  out.teams = d.teams.map(fix);
+  out.duets = d.duets.map(fix);
+  return out;
+}
+
 function fmtPoints(v) {
   return typeof v === "number" && isFinite(v) ? String(v).replace("-", "\u2212") : "\u2013";
 }
@@ -511,7 +526,7 @@ function fmtPoints(v) {
           showMessage("Nieobsługiwany format danych");
           return;
         }
-        accept(b);
+        accept(withLiveTotals(b));
       })
       .catch(function () {
         if (data) showNotice("Nie udało się odświeżyć danych – pokazuję ostatni stan.");

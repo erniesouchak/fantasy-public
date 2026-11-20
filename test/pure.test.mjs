@@ -3,7 +3,8 @@ import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 const html = readFileSync(new URL("../public/index.html", import.meta.url), "utf8");
 const src = html.slice(html.indexOf("/* pure:start"), html.indexOf("/* pure:end */"));
-const { freshness, rankRows, fmtPoints } = new Function(src + "; return { freshness, rankRows, fmtPoints };")();
+const { freshness, rankRows, fmtPoints, withLiveTotals } =
+  new Function(src + "; return { freshness, rankRows, fmtPoints, withLiveTotals };")();
 
 const now = Date.parse("2026-11-08T17:00:00+01:00");
 const ago = (m) => new Date(now - m * 60000).toISOString();
@@ -56,4 +57,17 @@ assert.equal(rankRows([{ round_net: null, total: 1 }, { round_net: 3, total: 1 }
 
 assert.equal(fmtPoints(-6), "−6");
 assert.equal(fmtPoints(null), "–");
+
+// Suma = total_live, gdy jest; inaczej total
+{
+  const d = { version: 1, round: 15,
+    teams: [{ slug: "a", total: 728, total_live: 735 }, { slug: "b", total: 943 }, { slug: "c", total: 600, total_live: null }],
+    duets: [{ group_name: "x", total: 1671, total_live: 1681 }, { group_name: "y", total: 1500 }] };
+  const w = withLiveTotals(d);
+  assert.deepEqual(w.teams.map((t) => t.total), [735, 943, 600]);
+  assert.deepEqual(w.duets.map((t) => t.total), [1681, 1500]);
+  assert.equal(w.round, 15);
+  assert.equal(d.teams[0].total, 728); // bez mutacji wejścia
+}
+
 console.log("OK – wszystkie testy przeszły");

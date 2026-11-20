@@ -23,7 +23,8 @@ Każda zmiana formatu = podbicie `version` i aktualizacja wszystkich trzech czę
       "round_points": 57,
       "penalty": 0,
       "round_net": 57,
-      "total": 762
+      "total": 762,
+      "total_live": 819
     }
   ],
   "duets": [
@@ -36,6 +37,7 @@ Każda zmiana formatu = podbicie `version` i aktualizacja wszystkich trzech czę
       "team2_name": "Poznań Festung",
       "round_net": 112,
       "total": 1582,
+      "total_live": 1694,
       "complete": true
     }
   ],
@@ -55,12 +57,14 @@ Każda zmiana formatu = podbicie `version` i aktualizacja wszystkich trzech czę
 | `received_at` | dopisuje Cloudflare przy zapisie – serwer domowy go **nie** wysyła |
 | `teams[]` | posortowane: `round_net` malejąco, przy remisie `total` malejąco |
 | `teams[].round_points` | „Punkty w kolejce” ze strony drużyny (`null` gdy nie udało się odczytać) |
-| `teams[].penalty` | „Prowizja za transfery” (≤ 0) |
-| `teams[].round_net` | `round_points + penalty` (`null` liczone jako 0) – po tym się sortuje |
-| `teams[].total` | suma punktów w sezonie (`total_points` z `/ranking-list`) |
-| `duets[]` | posortowane jak `teams[]`; może być pustą listą (brak pliku duetów na serwerze domowym) |
+| `teams[].penalty` | „Prowizja za transfery” (≤ 0) – tylko informacyjnie, nie wpływa na `round_net` ani sortowanie |
+| `teams[].round_net` | `round_points` (`null` liczone jako 0), bez prowizji – po tym się sortuje |
+| `teams[].total` | suma punktów w sezonie (`total_points` z `/ranking-list`) – bez meczów bieżącej kolejki, które fantasy jeszcze nie wliczyło |
+| `teams[].total_live` | *opcjonalne* – `total` + punkty bieżącej kolejki, których nie ma jeszcze w `total`: przed pierwszym meczem kolejki = `total`; do końca pierwszego meczu `total + round_points`; potem `total + (round_points − „Ostatnia kolejka”)`. Strona publiczna pokazuje je jako „Suma” (brak pola → `total`) |
+| `duets[]` | posortowane: `round_net` malejąco, przy remisie `total_live` malejąco; może być pustą listą (brak pliku duetów na serwerze domowym) |
 | `duets[].round_net` | suma `round_net` obu drużyn |
 | `duets[].total` | suma `total` obu drużyn |
+| `duets[].total_live` | *opcjonalne* – suma `total_live` obu drużyn |
 | `duets[].complete` | `false`, jeśli którejś drużyny z pary nie ma w danych (wtedy sumy liczone z tego, co jest) |
 
 Nazwy drużyn w `duets[]` bierzemy z `teams[]` (aktualne, z polskimi znakami), a nie z pliku `duety_cmf.json`
